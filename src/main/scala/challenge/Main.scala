@@ -1,56 +1,53 @@
 package challenge
 
+import java.io.PrintWriter
+
 import scala.io.Source
 import play.api.libs.json._
 
-import scala.collection.immutable.HashMap
-import scala.util.Random
-
-// http://sortable.com/challenge/
 
 object Main extends App {
+  if (args.size != 3) {
+    println("usage:\n\tsbt \"run data/products.txt data/listings.txt results.txt\"")
+    sys.exit(1)
+  }
+  val Array(productsPath, listingsPath, outputPath) = args
 
   def readJsonLines(fileName: String) =
     Source.fromFile(fileName).getLines().map(Json.parse(_).as[Map[String, String]])
 
   // remove hyphen and make lowercase
-  def simplify[A](m: Map[A, String]) = m.mapValues(v => v.filter(_ != '-').toLowerCase())
+  def simplify[A](m: Map[A, String]) = m.mapValues(v => v.filter(_ != '-').toLowerCase().trim)
 
   // read JSON lines into Map objects
-  println("reading data")
-  val products = readJsonLines("data/products.txt").map(simplify).toVector
-  val listings = readJsonLines("data/listings.txt").map(simplify).toVector
+  val products = readJsonLines(productsPath).toVector
+  val productsSimplified = products.map(simplify)
+  val listings = readJsonLines(listingsPath).toVector
+  val listingsSimplified = listings.map(simplify)
+  val listingsTitleTokens = listingsSimplified.zipWithIndex.map(t => t._2 -> t._1("title").split(" "))
 
-  // check if products are unique: NO!
-  // remove duplicates because we risk losing precision depending on how ground truth is defined
-  println("removing duplicate products")
-  val productsUnique = products.groupBy(p => (p("model"), p("manufacturer"), p.get("family")))
+  // remove duplicate products because we risk losing precision depending on how ground truth is defined (only 1 case)
+  val productsUnique = productsSimplified.groupBy(p => (p("model"), p("manufacturer"), p.get("family")))
     .collect{ case (g, xs) if xs.size == 1 => xs.head }.toVector
 
-  println("shortening model name")
+  // remove spaces from model so we can match single words
   val productsExtra = productsUnique.map(p => p.updated("modelShort", p("model").filter(_ != ' ')))
 
-  println("finding matches")
-  val x = listings.map(l => l -> productsExtra.zipWithIndex.collect{
-    case (p, i) if (l("title").contains(p("model")) || l("title").contains(p("modelShort")))
-                //&& l("title").contains(p("manufacturer"))
-                && l("title").contains(p.getOrElse("family", ""))
-                && l("manufacturer").contains(p("manufacturer"))
-      => i
-  })
+  val listingMatches = listingsTitleTokens.map{
+    case (li, t) => li -> productsExtra.zipWithIndex.filter { case (p, pi) =>
+      (t.contains(p("model")) || t.contains(p("modelShort"))) &&
+        p.get("family").forall(t.contains) &&
+        listingsSimplified(li)("manufacturer").contains(p("manufacturer"))
+    }.map(_._2)}
 
-  /* product types:
-   - real camera
-     => try to match perfectly
-   - camera accessories (e.g. flash, tripod, battery)
-     => these could be compatible with different camera models
-     => ignore because we only want cameras
-   */
+  val singleMatches = listingMatches.collect{case (l, ps) if ps.size == 1 => (l, products(ps.head))}
 
-  for (i <- 0 until 5)
-    println(i + ": " + x.filter(_._2.size == i).size / x.size.toDouble)
-  //for (t <- x.filter(_._2.size == 0).take(50).map(_._1))
-  /*Random.setSeed(0)
-  for (t <- Random.shuffle(x.filter(e => e._2.size == 1 && !e._1("manufacturer").contains(e._2(0)("manufacturer"))).take(150)))
-    println(t)*/
+  val pw = new PrintWriter(outputPath)
+  for (g <- singleMatches.groupBy(_._2)) {
+    pw.write(JsObject(Map(
+      "product_name" -> JsString(g._1("product_name")),
+      "listings" -> JsArray(g._2.map(t => Json.toJson(listings(t._1))))
+    )).toString + '\n')
+  }
+  pw.close
 }
