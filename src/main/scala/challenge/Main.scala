@@ -16,7 +16,7 @@ object Main extends App {
   def readJsonLines(fileName: String) =
     Source.fromFile(fileName).getLines().map(Json.parse(_).as[Map[String, String]])
 
-  // remove hyphen and make lowercase
+  // remove hyphens and make lowercase
   def simplify[A](m: Map[A, String]) = m.mapValues(v => v.filter(_ != '-').toLowerCase().trim)
 
   // read JSON lines into Map objects
@@ -30,9 +30,10 @@ object Main extends App {
   val productsUnique = productsSimplified.groupBy(p => (p("model"), p("manufacturer"), p.get("family")))
     .collect{ case (g, xs) if xs.size == 1 => xs.head }.toVector
 
-  // remove spaces from model so we can match single words
+  // add model version without spaces so we can match single words
   val productsExtra = productsUnique.map(p => p.updated("modelShort", p("model").filter(_ != ' ')))
 
+  // match the listings to products
   val listingMatches = listingsTitleTokens.map{
     case (li, t) => li -> productsExtra.zipWithIndex.filter { case (p, pi) =>
       (t.contains(p("model")) || t.contains(p("modelShort"))) &&
@@ -40,8 +41,10 @@ object Main extends App {
         listingsSimplified(li)("manufacturer").contains(p("manufacturer"))
     }.map(_._2)}
 
+  // only take the listings that match to exactly one product
   val singleMatches = listingMatches.collect{case (l, ps) if ps.size == 1 => (l, products(ps.head))}
 
+  // write to file
   val pw = new PrintWriter(outputPath)
   for (g <- singleMatches.groupBy(_._2)) {
     pw.write(JsObject(Map(
