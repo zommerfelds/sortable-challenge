@@ -1,5 +1,5 @@
 # Sortable Coding Challenge
-This is my entry for the Sortable Coding Challenge.
+This is my entry for the [Sortable Coding Challenge](http://sortable.com/challenge/).
 
 Since the challenge is relatively open ended, my approach focuses on simplicity.
 
@@ -7,11 +7,14 @@ Since the challenge is relatively open ended, my approach focuses on simplicity.
 `sbt "run data/products.txt data/listings.txt results.txt"`
 
 ## Approach
-For this kind of task it is often the case that a few good hand-crafted rules beat rather complex machine learning based methods. If we assume that we want write code for use in production, that we have to adapt and maintain, then simpler and extensible methods are likely a better choice than very complex systems with a slightly better performance (of course there are exceptions). The machine learning approach also suffers from no labeled test set, so we can't easily optimize an estimator.
+For this kind of task it is often the case that a few good hand-crafted rules beat rather complex machine learning methods. If we assume that we want write code for use in production that needs to be adapted and maintained, then simpler and extensible methods are likely a better choice than very complex systems with a slightly better performance (of course there are exceptions). The machine learning approach also suffers from no labeled test set in this case, so we can't easily optimize an estimator.
 
 Data exploration is key in this challenge. I have experimented with different rules and looked at the percentage of matches, negatives and positives. The code contains a set of rules that seem to work reasonable well.
 
-There are many ways to make this better: Build a small data set with key examples in order to make experimentation and evaluation faster.
+There are many ways to make this better:
+- Build a small data set with key examples in order to make iterations of experimentation and evaluation faster
+- Try out more combinations of rules
+- Use the rule-based method as a base-line to create labels and then use machine learning on top to improve the classification
 
 ## Assumptions
 I make the following assumptions:
