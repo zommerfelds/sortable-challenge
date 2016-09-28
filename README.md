@@ -11,9 +11,9 @@ For this kind of task it is often the case that a few good hand-crafted rules be
 
 Data exploration is key in this challenge. I have experimented with different rules and looked at the percentage of matches, negatives and positives. The code contains a set of rules that seem to work reasonable well.
 
-![Histogram of number of matched products](plot/plot.png)
+<img src="plot/plot.png" width="500" alt="Histogram of number of matched products">
 
-There are many ways to make this better:
+There are many ways to make this approach better:
 - Build a small data set with key examples in order to make iterations of experimentation and evaluation faster
 - Try out more combinations of rules
 - Use the rule-based method as a base-line to create labels and then use machine learning on top to improve the classification
