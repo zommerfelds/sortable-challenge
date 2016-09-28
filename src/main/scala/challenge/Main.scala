@@ -44,6 +44,9 @@ object Main extends App {
   // only take the listings that match to exactly one product
   val singleMatches = listingMatches.collect{case (l, ps) if ps.size == 1 => (l, products(ps.head))}
 
+  // simple histogram (used for plot)
+  // println(listingMatches.groupBy(_._2.size).mapValues(_.size))
+
   // write to file
   val pw = new PrintWriter(outputPath)
   for (g <- singleMatches.groupBy(_._2)) {
